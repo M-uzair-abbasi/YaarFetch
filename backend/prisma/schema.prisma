@@ -1,0 +1,152 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RolePreference {
+  BUYER
+  DELIVERER
+  BOTH
+}
+
+enum OrderStatus {
+  DRAFT
+  ACTIVE
+  MATCHED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MatchStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum OfferStatus {
+  ACTIVE
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id              String         @id @default(uuid())
+  email           String         @unique
+  passwordHash    String         @map("password_hash")
+  name            String
+  phone           String?
+  profilePic      String?        @map("profile_pic")
+  campus          String?
+  rolePreference  RolePreference @default(BOTH) @map("role_preference")
+  rating          Float          @default(0)
+  emailVerified   Boolean        @default(false) @map("email_verified")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  orders          Order[]
+  offers          DeliveryOffer[]
+  sentMessages    Message[]      @relation("SentMessages")
+  receivedReviews Review[]       @relation("ReceivedReviews")
+  givenReviews    Review[]       @relation("GivenReviews")
+
+  @@map("users")
+}
+
+model Order {
+  id               String      @id @default(uuid())
+  creatorId        String      @map("creator_id")
+  title            String
+  description      String
+  pickupLocation   String      @map("pickup_location")
+  deliveryLocation String      @map("delivery_location")
+  budget           Float
+  deadline         DateTime?
+  status           OrderStatus @default(DRAFT)
+  specialInstructions String?  @map("special_instructions")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+
+  creator          User        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  matches          Match[]
+
+  @@map("orders")
+}
+
+model DeliveryOffer {
+  id                String      @id @default(uuid())
+  delivererId       String      @map("deliverer_id")
+  departureTime     DateTime    @map("departure_time")
+  returnTime        DateTime    @map("return_time")
+  departureLocation String      @map("departure_location")
+  returnLocation    String      @map("return_location")
+  maxCapacity       Int         @default(1) @map("max_capacity")
+  serviceFee        Float?      @map("service_fee")
+  status            OfferStatus @default(ACTIVE)
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  deliverer         User        @relation(fields: [delivererId], references: [id], onDelete: Cascade)
+  matches           Match[]
+
+  @@map("delivery_offers")
+}
+
+model Match {
+  id          String      @id @default(uuid())
+  orderId     String      @map("order_id")
+  offerId     String      @map("offer_id")
+  status      MatchStatus @default(PENDING)
+  matchedAt   DateTime?   @map("matched_at")
+  completedAt DateTime?   @map("completed_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  offer       DeliveryOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  messages    Message[]
+  reviews     Review[]
+
+  @@unique([orderId, offerId])
+  @@map("matches")
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  matchId   String   @map("match_id")
+  senderId  String   @map("sender_id")
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Review {
+  id          String   @id @default(uuid())
+  matchId     String   @map("match_id")
+  reviewerId  String   @map("reviewer_id")
+  revieweeId  String   @map("reviewee_id")
+  rating      Int      // 1-5
+  comment     String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  match       Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  reviewer    User     @relation("GivenReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewee    User     @relation("ReceivedReviews", fields: [revieweeId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, reviewerId])
+  @@map("reviews")
+}

@@ -12,7 +12,7 @@ const OrderDetail = () => {
   const [order, setOrder] = useState<Order | null>(null);
   const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedMatch, setSelectedMatch] = useState<string | null>(null);
+  const [selectedMatch] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {

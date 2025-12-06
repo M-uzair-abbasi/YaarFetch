@@ -41,16 +41,6 @@ const OrderDetail = () => {
     }
   };
 
-  const handleCreateMatch = async (offerId: string) => {
-    try {
-      await matchService.createMatch({ orderId: id!, offerId });
-      await loadMatches();
-      await loadOrder();
-    } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to create match');
-    }
-  };
-
   if (loading) {
     return <div className="container mx-auto px-4 py-8">Loading...</div>;
   }

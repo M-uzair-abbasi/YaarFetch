@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+
 import authRoutes from './routes/auth';
 import orderRoutes from './routes/orders';
 import offerRoutes from './routes/offers';
@@ -16,9 +17,23 @@ dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
+
+const FRONTEND_URL =
+  process.env.FRONTEND_URL ||
+  "https://serene-embrace-production.up.railway.app";
+
+const allowedOrigins = [
+  FRONTEND_URL,
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
+// ----------------------
+//   SOCKET.IO CORS
+// ----------------------
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -26,38 +41,43 @@ const io = new Server(httpServer, {
 
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// ----------------------
+//       CORS FIX
+// ----------------------
 const corsOptions = {
   origin: function (origin: string | undefined, callback: Function) {
-    const allowedOrigins = [
-      process.env.FRONTEND_URL,
-      'http://localhost:5173',
-      'http://localhost:3000',
-    ].filter(Boolean);
-    
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // Allow no-origin (e.g., curl, mobile apps)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      console.log("❌ CORS BLOCKED:", origin);
+      callback(new Error("Not allowed by CORS"));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  maxAge: 86400, // 24 hours
+  maxAge: 86400,
 };
 
 app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // allow preflight
 
+// ----------------------
+//    PARSING MIDDLEWARE
+// ----------------------
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (uploads)
+// ----------------------
+//   STATIC FILES
+// ----------------------
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Routes
+// ----------------------
+//        ROUTES
+// ----------------------
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/orders', orderRoutes);
@@ -66,12 +86,16 @@ app.use('/api/matches', matchRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/reviews', reviewRoutes);
 
-// Health check
+// ----------------------
+//     HEALTH CHECK
+// ----------------------
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
-// Socket.io connection handling
+// ----------------------
+//   SOCKET.IO EVENTS
+// ----------------------
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
@@ -91,9 +115,12 @@ io.on('connection', (socket) => {
 // Make io available to routes
 app.set('io', io);
 
+// ----------------------
+//    START SERVER
+// ----------------------
 httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌐 Allowed Frontend: ${FRONTEND_URL}`);
 });
 
 export { io };
-

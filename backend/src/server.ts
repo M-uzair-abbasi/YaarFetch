@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 
@@ -18,8 +19,15 @@ dotenv.config();
 const app = express();
 const httpServer = createServer(app);
 
+// ----------------------
+// ENVIRONMENT VARIABLES
+// ----------------------
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://serene-embrace-production.up.railway.app";
+const PORT = process.env.PORT || 5000;
 
+// ----------------------
+// ALLOWED ORIGINS
+// ----------------------
 const allowedOrigins = [
   FRONTEND_URL,
   'http://localhost:5173',
@@ -27,7 +35,7 @@ const allowedOrigins = [
 ];
 
 // ----------------------
-//   SOCKET.IO CORS
+// SOCKET.IO CORS
 // ----------------------
 const io = new Server(httpServer, {
   cors: {
@@ -37,28 +45,18 @@ const io = new Server(httpServer, {
   },
 });
 
-const PORT = process.env.PORT || 5000;
-
 // ----------------------
-//       CORS MIDDLEWARE
+// GLOBAL CORS MIDDLEWARE
 // ----------------------
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile, curl)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log("❌ CORS BLOCKED:", origin);
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
 // Preflight handler for all routes
-app.use(cors({
+app.options("/*", cors({
   origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
@@ -67,18 +65,20 @@ app.use(cors({
 
 
 // ----------------------
-//    PARSING MIDDLEWARE
+// PARSING MIDDLEWARE
 // ----------------------
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ----------------------
-//   STATIC FILES
+// UPLOADS FOLDER (ENSURE EXISTS)
 // ----------------------
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+const uploadDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+app.use('/uploads', express.static(uploadDir));
 
 // ----------------------
-//        ROUTES
+// ROUTES
 // ----------------------
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -89,14 +89,14 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/reviews', reviewRoutes);
 
 // ----------------------
-//     HEALTH CHECK
+// HEALTH CHECK
 // ----------------------
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
 // ----------------------
-//   SOCKET.IO EVENTS
+// SOCKET.IO EVENTS
 // ----------------------
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
@@ -114,11 +114,11 @@ io.on('connection', (socket) => {
   });
 });
 
-// Make io available to routes
+// Make io available in routes
 app.set('io', io);
 
 // ----------------------
-//    START SERVER
+// START SERVER
 // ----------------------
 httpServer.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

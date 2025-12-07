@@ -44,10 +44,10 @@ const allowedOrigins = [
 // CORS CONFIGURATION (FIXED)
 // ----------------------
 const corsOptions = {
-  origin: function (origin, callback) {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     // Allow requests with no origin (like mobile apps, curl, postman)
     if (!origin) return callback(null, true);
-    
+
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -107,8 +107,8 @@ app.use('/api/reviews', reviewRoutes);
 // HEALTH CHECK (ENHANCED)
 // ----------------------
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     message: 'Server is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',

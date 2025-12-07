@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import prisma from '../utils/prisma';
-import { generateVerificationToken, sendVerificationEmail } from '../utils/email';
+import prisma from '../utils/prisma.js';
+import { generateVerificationToken, sendVerificationEmail } from '../utils/email.js';
 
 // Use CommonJS require with `any` type to avoid TypeScript overload issues with jsonwebtoken types
 // This is safe for our simple payload (just userId) and secret string.

@@ -16,10 +16,24 @@ const Login = () => {
     setLoading(true);
 
     try {
+      console.log('Attempting login for:', email);
       await login({ email, password });
+      console.log('Login successful, navigating to home');
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed');
+      console.error('Login Error Details:', err);
+      if (err.response) {
+        console.error('Response Data:', err.response.data);
+        console.error('Response Status:', err.response.status);
+        console.error('Response Headers:', err.response.headers);
+      } else if (err.request) {
+        console.error('No response received:', err.request);
+      } else {
+        console.error('Error setting up request:', err.message);
+      }
+
+      const errorMessage = err.response?.data?.error || err.message || 'Login failed';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

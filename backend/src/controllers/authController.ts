@@ -84,8 +84,10 @@ export const register = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
+    console.log(`Login attempt for email: ${email}`);
 
     if (!email || !password) {
+      console.log('Login failed: Missing email or password');
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
@@ -95,6 +97,7 @@ export const login = async (req: Request, res: Response) => {
     });
 
     if (!user) {
+      console.log(`Login failed: User not found for email ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -102,8 +105,11 @@ export const login = async (req: Request, res: Response) => {
     const isValidPassword = await bcrypt.compare(password, user.passwordHash);
 
     if (!isValidPassword) {
+      console.log(`Login failed: Invalid password for user ${email}`);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    console.log(`Login successful for user ${email} (ID: ${user.id})`);
 
     // Generate JWT token
     const token = jwt.sign(
@@ -128,8 +134,8 @@ export const login = async (req: Request, res: Response) => {
       token,
     });
   } catch (error: any) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Login error exception:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 };
 

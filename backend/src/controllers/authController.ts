@@ -6,7 +6,7 @@ import { generateVerificationToken, sendVerificationEmail } from '../utils/email
 // Use CommonJS require with `any` type to avoid TypeScript overload issues with jsonwebtoken types
 // This is safe for our simple payload (just userId) and secret string.
 // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-explicit-any
-const jwt: any = require('jsonwebtoken');
+import * as jwt from 'jsonwebtoken';
 
 export const register = async (req: Request, res: Response) => {
   try {

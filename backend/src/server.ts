@@ -18,9 +18,7 @@ dotenv.config();
 const app = express();
 const httpServer = createServer(app);
 
-const FRONTEND_URL =
-  process.env.FRONTEND_URL ||
-  "https://serene-embrace-production.up.railway.app";
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://serene-embrace-production.up.railway.app";
 
 const allowedOrigins = [
   FRONTEND_URL,
@@ -34,7 +32,7 @@ const allowedOrigins = [
 const io = new Server(httpServer, {
   cors: {
     origin: allowedOrigins,
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     credentials: true,
   },
 });
@@ -42,22 +40,31 @@ const io = new Server(httpServer, {
 const PORT = process.env.PORT || 5000;
 
 // ----------------------
-//       CORS FIX
+//       CORS MIDDLEWARE
 // ----------------------
 app.use(cors({
-  origin: allowedOrigins,   // allow only your frontend
-  credentials: true,        // allow cookies/auth headers
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile, curl)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log("❌ CORS BLOCKED:", origin);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
 // Preflight handler for all routes
-app.options("/*", cors({
+app.use(cors({
   origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
+
 
 // ----------------------
 //    PARSING MIDDLEWARE

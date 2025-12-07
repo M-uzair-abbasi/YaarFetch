@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticate } from '../middleware/auth';
+import { authenticate } from '../middleware/auth.js';
 import {
   createMatch,
   getMatches,
@@ -7,7 +7,7 @@ import {
   updateMatchStatus,
   getMatchesForOrder,
   getMatchesForOffer,
-} from '../controllers/matchController';
+} from '../controllers/matchController.js';
 
 const router = express.Router();
 

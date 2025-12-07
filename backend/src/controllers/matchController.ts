@@ -1,6 +1,6 @@
 import { Response } from 'express';
-import { AuthRequest } from '../middleware/auth';
-import prisma from '../utils/prisma';
+import { AuthRequest } from '../middleware/auth.js';
+import prisma from '../utils/prisma.js';
 import { Express } from 'express';
 
 export const createMatch = async (req: AuthRequest, res: Response) => {

@@ -28,7 +28,7 @@ const httpServer = createServer(app);
 // ENVIRONMENT VARIABLES
 // ----------------------
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://serene-embrace-production.up.railway.app";
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 // ----------------------
 // ALLOWED ORIGINS

@@ -15,18 +15,20 @@ import messageRoutes from './routes/messages.js';
 import userRoutes from './routes/users.js';
 import reviewRoutes from './routes/reviews.js';
 
+// ----------------------
 // ES Modules fix
+// ----------------------
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// ----------------------
+// ENV CONFIG
+// ----------------------
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
 
-// ----------------------
-// ENVIRONMENT VARIABLES
-// ----------------------
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://serene-embrace-production.up.railway.app";
 const PORT = process.env.PORT || 5000;
 
@@ -41,17 +43,17 @@ const allowedOrigins = [
 ];
 
 // ----------------------
-// CORS CONFIGURATION (FIXED)
+// CORS CONFIGURATION
 // ----------------------
 const corsOptions = {
-  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    // Allow requests with no origin (like mobile apps, curl, postman)
+  origin: (origin, callback) => {
+    // allow requests with no origin (Postman / server-to-server)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error('Not allowed by CORS'), false);
     }
   },
   credentials: true,
@@ -62,8 +64,6 @@ const corsOptions = {
 
 // Apply CORS middleware
 app.use(cors(corsOptions));
-
-// Handle preflight requests explicitly
 app.options('*', cors(corsOptions));
 
 // ----------------------
@@ -73,12 +73,12 @@ const io = new Server(httpServer, {
   cors: {
     origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    credentials: true,
-  },
+    credentials: true
+  }
 });
 
 // ----------------------
-// PARSING MIDDLEWARE
+// MIDDLEWARE
 // ----------------------
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -87,9 +87,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // UPLOADS FOLDER
 // ----------------------
 const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 app.use('/uploads', express.static(uploadDir));
 
 // ----------------------
@@ -104,7 +102,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/reviews', reviewRoutes);
 
 // ----------------------
-// HEALTH CHECK (ENHANCED)
+// HEALTH CHECK
 // ----------------------
 app.get('/api/health', (req, res) => {
   res.json({
@@ -113,14 +111,14 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
     cors: {
-      allowedOrigins: allowedOrigins,
+      allowedOrigins,
       frontendUrl: FRONTEND_URL
     }
   });
 });
 
 // ----------------------
-// TEST ENDPOINT FOR CORS
+// CORS TEST ENDPOINT
 // ----------------------
 app.get('/api/cors-test', (req, res) => {
   res.json({
@@ -137,12 +135,12 @@ app.get('/api/cors-test', (req, res) => {
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  socket.on('join-room', (matchId: string) => {
+  socket.on('join-room', (matchId) => {
     socket.join(`match-${matchId}`);
     console.log(`Socket ${socket.id} joined room match-${matchId}`);
   });
 
-  socket.on('leave-room', (matchId: string) => {
+  socket.on('leave-room', (matchId) => {
     socket.leave(`match-${matchId}`);
     console.log(`Socket ${socket.id} left room match-${matchId}`);
   });
@@ -156,15 +154,15 @@ io.on('connection', (socket) => {
 app.set('io', io);
 
 // ----------------------
-// ERROR HANDLING MIDDLEWARE
+// ERROR HANDLING
 // ----------------------
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err, req, res, next) => {
   if (err.message === 'Not allowed by CORS') {
     return res.status(403).json({
       error: 'CORS Error',
       message: 'Origin not allowed',
       yourOrigin: req.headers.origin,
-      allowedOrigins: allowedOrigins
+      allowedOrigins
     });
   }
   next(err);

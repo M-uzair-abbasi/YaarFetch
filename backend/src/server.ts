@@ -62,7 +62,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // allow preflight
+app.options("/*", cors(corsOptions)); // allow preflight
 
 // ----------------------
 //    PARSING MIDDLEWARE

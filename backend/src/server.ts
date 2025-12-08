@@ -39,7 +39,8 @@ const allowedOrigins = [
   FRONTEND_URL,
   'http://localhost:5173',
   'http://localhost:3000',
-  'https://serene-embrace-production.up.railway.app'
+  'https://serene-embrace-production.up.railway.app',
+  'https://yaar-fetchv2-eight.vercel.app'
 ];
 
 // ----------------------
